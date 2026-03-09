@@ -30,3 +30,8 @@ def addMiddleware(app):
         allow_methods=["*"],      # 3. 允許什麼動作？ (* 代表 GET, POST, PUT, DELETE 通通可以)
         allow_headers=["*"],      # 4. 允許什麼 Header？ (* 代表通通可以)
         )
+
+# --- 新增 JWT 環境變數設定 ---
+SECRET_KEY = "your-super-secret-key-change-this-in-production"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1

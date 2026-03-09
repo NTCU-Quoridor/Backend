@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, Field
 from ..model.db import get_db, User
+from ..core.security import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi.security import OAuth2PasswordRequestForm
+from datetime import timedelta
 
 load_dotenv() # 讀取 .env 檔案
 TURNSTILE_SECRET = os.getenv("TURNSTILE_SECRET")
@@ -13,9 +17,6 @@ TURNSTILE_SECRET = os.getenv("TURNSTILE_SECRET")
 router = APIRouter()
 
 # 設定密碼加密方式
-# 這裡加上 truncate=True 可以強制處理長度問題，
-# 但最重要的是確保 bcrypt 正常運作
-# 修改加密方式為 argon2
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # Pydantic 模型：定義前端傳進來的資料格式，進行資料驗證與設定管理
@@ -73,14 +74,23 @@ def register(user: UserRegister,  db: Session = Depends(get_db)):
 
 # --- 登入 API ---
 @router.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
+def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     # 1. 找尋使用者
-    db_user = db.query(User).filter(User.username == user.username).first()
+    db_user = db.query(User).filter(User.username == form_data.username).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="帳號或密碼錯誤")
     
     # 2. 比對加密密碼 (verify 會自動將明文密碼與雜湊後的密碼做對比)
-    if not pwd_context.verify(user.password, db_user.hashed_password):
+    if not pwd_context.verify(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="帳號或密碼錯誤")
-    
-    return {"message": "登入成功", "username": db_user.username}
+    # 3. 密碼正確，核發 JWT Token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": form_data.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+    # return {"message": "登入成功", "username": db_user.username}
+
+@router.get("/me")
+def read_users_me(current_user: str = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user}! You are successfully logged in."}

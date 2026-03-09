@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>JWT Auth 測試</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        input { display: block; margin-bottom: 10px; padding: 5px; width: 100%; box-sizing: border-box;}
+        button { padding: 8px 15px; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+    <h2>FastAPI JWT 登入測試</h2>
+
+    <div class="box">
+        <h3>1. 登入取得 Token</h3>
+        <input type="text" id="username" placeholder="請輸入帳號 (例如: admin)" value="admin">
+        <input type="password" id="password" placeholder="請輸入密碼" value="123456">
+        <button onclick="login()">登入</button>
+    </div>
+
+    <div class="box">
+        <h3>2. 測試受保護的 API</h3>
+        <p>這會把剛才拿到的 Token 放在 Header 裡面送出。</p>
+        <button onclick="getProtectedData()">取得個人資料 (/api/me)</button>
+    </div>
+
+    <div class="box">
+        <h3>API 回應結果：</h3>
+        <pre id="output">等待操作...</pre>
+    </div>
+
+    <script>
+        // 設定你的後端 API 網址
+        const API_BASE_URL = "http://localhost:8000/api";
+        let jwtToken = ""; // 暫存 Token 用
+
+        // 顯示結果的輔助函數
+        function showOutput(data) {
+            document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+        }
+
+        // 登入功能
+        async function login() {
+            const user = document.getElementById("username").value;
+            const psw = document.getElementById("password").value;
+
+            // FastAPI 的 OAuth2PasswordRequestForm 需要 form-urlencoded 格式
+            const formData = new URLSearchParams();
+            formData.append("username", user);
+            formData.append("password", psw);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    jwtToken = data.access_token; // 把 token 存進變數
+                    showOutput({
+                        status: "登入成功！Token 已儲存。",
+                        raw_data: data
+                    });
+                } else {
+                    showOutput({ status: "登入失敗", error: data });
+                }
+            } catch (error) {
+                showOutput({ status: "連線錯誤", error: error.message });
+            }
+        }
+
+        // 請求受保護的資料
+        async function getProtectedData() {
+            if (!jwtToken) {
+                showOutput({ status: "錯誤：請先登入取得 Token！" });
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/me`, {
+                    method: "GET",
+                    headers: {
+                        // 重點：將 Token 放在 Authorization Header 中
+                        "Authorization": `Bearer ${jwtToken}`
+                    }
+                });
+
+                const data = await response.json();
+                showOutput(data);
+                
+            } catch (error) {
+                showOutput({ status: "連線錯誤", error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>
