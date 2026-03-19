@@ -25,8 +25,8 @@
         <input type="text" id="reg_user" placeholder="帳號">
         <input type="email" id="reg_email" placeholder="電子信箱">
         <input type="password" id="reg_pass" placeholder="密碼">
-        <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>  // captcha_token
-        <button onclick="handleAuth('register')">點我註冊</button>
+        <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>  
+        <button onclick="register()">點我註冊</button>
     </div>
 
     <div class="box">
@@ -63,6 +63,19 @@
         // --- 1. 註冊功能 (使用 JSON 格式) ---
         async function register() {
             showMessage("註冊中...");
+
+            // endpoint = "/register";
+
+            // 抓取 Turnstile 產生的 token
+            const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]').value;
+
+            if (!turnstileResponse) {
+                // msgDiv.style.color = "red";
+                // msgDiv.innerText = "請先完成安全驗證";
+                showMessage("請先完成安全驗證");
+                // return;
+            }
+
             const payload = {
                 username: document.getElementById('reg_user').value,
                 email: document.getElementById('reg_email').value,
@@ -70,21 +83,11 @@
                 captcha_token: turnstileResponse  // 傳回後端用
             };
 
-            endpoint = "/register";
-
-            // 抓取 Turnstile 產生的 token
-            const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]').value;
-
-            if (!turnstileResponse) {
-                msgDiv.style.color = "red";
-                msgDiv.innerText = "請先完成安全驗證";
-                return;
-            }
-
             try {
                 const response = await fetch(`${API_BASE_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }, 
+                    // headers: { "Content-Type": "application/x-www-form-urlencoded" },
                     body: JSON.stringify(payload)
                 });
                 
@@ -154,20 +157,6 @@
             } catch (error) {
                 showMessage("無法連線至後端伺服器", true);
             }
-        }
-
-        // 若註冊失敗，建議重置 Turnstile 元件
-        if (!response.ok && type === 'register') {
-
-            // 如果驗證失敗，讓使用者可以重試
-            turnstile.reset(); 
-        }
-
-        // 若註冊失敗，建議重置 Turnstile 元件
-        if (!response.ok && type === 'register') {
-
-            // 如果驗證失敗，讓使用者可以重試
-            turnstile.reset(); 
         }
     </script>
 </body>
