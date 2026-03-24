@@ -1,6 +1,7 @@
 import os
 import requests
-from dotenv import load_dotenv
+from ..core.config import TURNSTILE_SECRET
+# from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -11,8 +12,8 @@ from ..core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 
-load_dotenv() # 讀取 .env 檔案
-TURNSTILE_SECRET = os.getenv("TURNSTILE_SECRET")
+# load_dotenv() # 讀取 .env 檔案
+# TURNSTILE_SECRET = os.getenv("TURNSTILE_SECRET")
 
 router = APIRouter()
 

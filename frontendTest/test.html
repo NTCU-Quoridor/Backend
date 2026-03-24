@@ -26,14 +26,14 @@
         <input type="email" id="reg_email" placeholder="電子信箱">
         <input type="password" id="reg_pass" placeholder="密碼">
         <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>  
-        <button onclick="register()">點我註冊</button>
+        <button type="button" onclick="register(event)">點我註冊</button>
     </div>
 
     <div class="box">
         <h3>2. 使用者登入</h3>
         <input type="text" id="login_user" placeholder="帳號">
         <input type="password" id="login_pass" placeholder="密碼">
-        <button onclick="login()">點我登入</button>
+        <button type="button" onclick="login()">點我登入</button>
     </div>
 
     <div class="box">
@@ -61,20 +61,27 @@
         }
 
         // --- 1. 註冊功能 (使用 JSON 格式) ---
-        async function register() {
-            showMessage("註冊中...");
+        async function register(e) {
+
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
 
             // endpoint = "/register";
 
             // 抓取 Turnstile 產生的 token
-            const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]').value;
+            const turnstileElem = document.querySelector('[name="cf-turnstile-response"]');
 
-            if (!turnstileResponse) {
+            if (!turnstileElem || !turnstileElem.value) {
                 // msgDiv.style.color = "red";
                 // msgDiv.innerText = "請先完成安全驗證";
-                showMessage("請先完成安全驗證");
-                // return;
+                showMessage("請先完成安全驗證", true);
+                return;
             }
+
+            const turnstileResponse = turnstileElem.value;
+            showMessage("註冊中...");
 
             const payload = {
                 username: document.getElementById('reg_user').value,

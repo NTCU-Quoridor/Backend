@@ -7,20 +7,20 @@ origins = [
     "http://localhost:8080",  # 可以有多個
 ]
 
-load_dotenv()
+# load_dotenv()
 
-class Settings:
-    PROJECT_NAME: str = "FastAPI 認證"
+# class Settings:
+#     PROJECT_NAME: str = "FastAPI 認證"
 
-    # --- 驗證碼設定 ---
-    # 優先讀取 .env，若無則使用 Cloudflare 提供的「公開測試金鑰」
-    # 這樣直接 push 到 GitHub，別人也能直接跑測試，且不會洩漏你的私鑰
-    TURNSTILE_SECRET: str = os.getenv(
-        "TURNSTILE_SECRET", 
-        "1x0000000000000000000000000000000AA"
-    )
+#     # --- 驗證碼設定 ---
+#     # 優先讀取 .env，若無則使用 Cloudflare 提供的「公開測試金鑰」
+#     # 這樣直接 push 到 GitHub，別人也能直接跑測試，且不會洩漏你的私鑰
+#     TURNSTILE_SECRET: str = os.getenv(
+#         "TURNSTILE_SECRET", 
+#         "1x0000000000000000000000000000000AA"
+#     )
 
-Settings = Settings()
+# Settings = Settings()
 
 def addMiddleware(app):
     app.add_middleware(
@@ -35,3 +35,6 @@ def addMiddleware(app):
 SECRET_KEY = "your-super-secret-key-change-this-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1
+
+# --- 新增 captcha 金鑰 (測試) --- 
+TURNSTILE_SECRET = "1x0000000000000000000000000000000AA"
