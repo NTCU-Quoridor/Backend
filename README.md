@@ -21,15 +21,19 @@
 - app/core/config.py
     - CORS 設定
     - JWT 相關常數與 Turnstile Secret（目前為程式內預設值）
+- app/core/email.py
+    - 忘記密碼與密碼重設
 - app/core/security.py
     - JWT 建立與解析
     - 受保護路由依賴 get_current_user
+    - 建立重設密碼的 token 
 - app/model/db.py
     - 資料庫連線（SQLite）
     - User ORM model
     - Session 依賴注入 get_db
 - app/routers/auth.py
     - /register, /login, /me API 實作
+    - /forgot-password, /reset-password API 實作
 
 ### 系統資料流程圖 (Simplified DFD)
 ![系統資料流程圖](document/DataFlowDiagram.png)
@@ -59,6 +63,7 @@ Backend
 ├─ app
 │  ├─ core                  # 設定檔
 │  │  ├─ config.py          #
+│  │  ├─ email.py           #
 │  │  ├─ security.py        #
 │  │  └─ __init__.py        #
 │  ├─ model                 #
@@ -83,9 +88,12 @@ Backend
 ```
 
 * .gitignore
-    * 不要上傳 .venv
+    * 不要上傳 .venv, .env
 * /.venv 
     * 由使用者自行建立
+* .env 
+    * 由使用者自行建立
+    * 可複製 .env.example 修改檔名為 .env，並修改當中參數
 
 ## 安裝與環境需求 (Installation & Requirements)
 ### 系統需求

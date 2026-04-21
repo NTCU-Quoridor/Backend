@@ -1,19 +1,23 @@
 import os
 import requests
-from ..core.config import TURNSTILE_SECRET
-# from dotenv import load_dotenv
+# from ..core.config import TURNSTILE_SECRET
+from jose import jwt, JWTError
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, Field
 from ..model.db import get_db, User
-from ..core.security import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
-from ..core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from ..core.security import create_access_token, get_current_user
+# from ..core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
+from ..core.email import send_reset_password_mail
+from ..core.config import settings
+from ..core.security import create_access_token, get_current_user, create_reset_token
 
-# load_dotenv() # 讀取 .env 檔案
-# TURNSTILE_SECRET = os.getenv("TURNSTILE_SECRET")
+TURNSTILE_SECRET = settings.TURNSTILE_SECRET
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter()
 
@@ -30,6 +34,13 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class UserForgotPassword(BaseModel):
+    email: EmailStr
+
+class UserResetPassword(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
 
 def verify_turnstile(token: str):
 
@@ -95,3 +106,52 @@ def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = 
 @router.get("/me")
 def read_users_me(current_user: str = Depends(get_current_user)):
     return {"message": f"Hello, {current_user}! You are successfully logged in."}
+
+# --- 忘記密碼 API ---
+@router.post("/forgot-password")
+async def forgot_password(email_data: UserForgotPassword, db: Session = Depends(get_db)):
+    # 1. 檢查使用者是否存在
+    user = db.query(User).filter(User.email == email_data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Cannot find the Email")
+    
+    # 2. 產生 Token (可用 jwt 加密 email)
+    token = create_reset_token(user.email)
+
+    # 3. 發送郵件
+    await send_reset_password_mail(user.email, token)
+
+    return {"message": "重設信件已寄出"}
+
+# --- 重設密碼 API ---
+@router.post("/reset-password")
+async def reset_password(data: UserResetPassword, db: Session = Depends(get_db)):
+    try:
+        # 1. 解碼 Token
+        payload = jwt.decode(
+            data.token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM]
+        )
+        
+        # 2. 檢查 Token 用途 (對應我們在 create_reset_token 寫的 purpose)
+        if payload.get("purpose") != "password_reset":
+            raise HTTPException(status_code=400, detail="無效的 Token 用途")
+            
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=400, detail="Token 內容錯誤")
+            
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Token 已過期或無效")
+
+    # 3. 尋找使用者
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="找不到對應的使用者")
+
+    # 4. 更新密碼 (記得要雜湊！)
+    user.hashed_password = pwd_context.hash(data.new_password)
+    
+    db.commit()
+    return {"message": "密碼更新成功"}

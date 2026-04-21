@@ -3,8 +3,10 @@ import jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from .config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from .config import settings
 
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
 
 # 設定 FastAPI 的 OAuth2 依賴項，指定登入的 API 路徑 (假設是 /api/auth/login)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
@@ -43,3 +45,17 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     
     # 這裡通常會再去資料庫查一次使用者是否存在，為了簡化先直接回傳 username
     return username
+
+def create_reset_token(email: str):
+    # 設定過期時間 (例如 15 分鐘)
+    expire = datetime.utcnow() + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES)
+    
+    # 這裡 Payload 建議加入 type 以區分這不是普通的 Login Token
+    to_encode = {
+        "exp": expire, 
+        "sub": email, 
+        "purpose": "password_reset" 
+    }
+    
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
