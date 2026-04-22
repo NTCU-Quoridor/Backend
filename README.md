@@ -33,29 +33,11 @@
     - Session 依賴注入 get_db
 - app/routers/auth.py
     - /register, /login, /me API 實作
-    - /forgot-password, /reset-password API 實作
+    - forgot-password/, reset-password/ API 實作
 
 ### 系統資料流程圖 (Simplified DFD)
 ![系統資料流程圖](document/DataFlowDiagram.png)
 
-## 帳號密碼規範 (Validation)
-為了確保系統安全性，後端針對帳號與密碼設有嚴格的 Pydantic 校驗規則：
-
-1. 帳號名稱 (Username)  
-   帳號名稱必須符合以下格式要求，否則系統將回傳驗證錯誤：
-
-    * 字數限制：長度必須介於 4 到 20 個字元 之間。
-    * 字元限制：僅允許使用 大、小寫英文字母 (A-Z, a-z)、數字 (0-9) 以及 底線 (_)。
-    * 不允許規則：禁止使用空格、特殊符號（如 @, !, # 等）或中文字元。
-
-2. 密碼 (Password)  
-為了保護您的帳戶安全，密碼必須符合以下最低要求：
-
-    * 字數限制：長度必須 至少為 8 個字元。
-
-    * 安全建議：雖然系統僅強制檢查長度，但強烈建議密碼應包含 大小寫字母混合、數字 及 特殊符號，以提高安全性。
-
-    * 存儲機制：系統不會以明文方式儲存您的密碼，所有密碼在進入資料庫前皆會經過高強度的雜湊演算法 (Hashing) 處理。
 
 ## 資料夾結構說明
 ```
@@ -93,7 +75,8 @@ Backend
     * 由使用者自行建立
 * .env 
     * 由使用者自行建立
-    * 可複製 .env.example 修改檔名為 .env，並修改當中參數
+    * 可複製 .env.example 修改檔名為 .env，並修改其中參數
+        * Username、Password 要填入 mailtrap 註冊的帳號資訊
     * 註冊一個 mailtrap 的帳號
         * mailtrap.io -> 選 sandbox -> 右邊 integration 中有 username 和 password (點擊就可以註冊) 
 
